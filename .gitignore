@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 环境变量和敏感信息（重要！）
+.env
+config/.env
+*.key
+*.pem
+*.secret
+*_secret.py
+secrets/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 日志和临时文件
+*.log
+*.tmp
+temp/
+tmp/
+
+# 数据库
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# 测试覆盖率
+.coverage
+htmlcov/
+.pytest_cache/
+
+# 项目特定
+*.cache

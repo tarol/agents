@@ -1,0 +1,9 @@
+langchain>=0.1.0
+langchain-anthropic>=0.1.0
+langchain-openai>=0.0.5
+langchain-google-genai>=0.0.5
+python-dotenv>=1.0.0
+openai>=1.0.0  # DeepSeek 使用 OpenAI SDK
+
+# 可选：中国大模型支持
+# langchain-community>=0.0.20  # 通义千问、文心一言等需要
