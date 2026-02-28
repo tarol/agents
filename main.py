@@ -1,111 +1,141 @@
 """
-LangChain 智能代理示例
-这个示例展示了如何创建一个配备多个工具的智能代理
+LangChain 智能代理交互式选择器
+这个示例展示了如何让用户选择不同的 Agent 进行对话
 """
-import os
 from dotenv import load_dotenv
-from langchain.agents import create_agent
+from src.agents.agent_factory import AgentFactory
 
 # 加载环境变量
 load_dotenv()
 
 
-def get_weather(city: str) -> str:
-    """获取指定城市的天气信息"""
-    # 这里是模拟数据，实际应用中可以调用真实的天气 API
-    weather_data = {
-        "北京": "多云，温度 15°C",
-        "上海": "晴朗，温度 20°C",
-        "深圳": "阴天，温度 25°C",
-        "旧金山": "晴朗，温度 18°C",
-    }
-    return weather_data.get(city, f"{city} 天气总是晴朗！温度适宜。")
-
-
-def calculate(expression: str) -> str:
-    """计算数学表达式"""
-    try:
-        result = eval(expression)
-        return f"计算结果: {expression} = {result}"
-    except Exception as e:
-        return f"计算错误: {str(e)}"
-
-
-def search_info(query: str) -> str:
-    """搜索信息（模拟）"""
-    # 这里是模拟搜索，实际应用中可以集成真实的搜索 API
-    return f"关于 '{query}' 的搜索结果：这是一个模拟的搜索结果。在实际应用中，这里会返回真实的搜索信息。"
-
-
-def create_my_agent():
-    """创建并配置智能代理"""
-    
-    # 从环境变量读取模型配置（默认使用 Anthropic）
-    model_provider = os.getenv("MODEL_PROVIDER", "anthropic")
-    
-    # 模型映射
-    model_map = {
-        "anthropic": "anthropic:claude-sonnet-4-5",
-        "openai": "openai:gpt-4o",
-        "google": "google:gemini-2.0-flash-exp",
-        "deepseek": "openai:deepseek-chat",
+def display_agents():
+    """显示所有可用的 Agent"""
+    agents = {
+        "1": {
+            "name": "基础 Agent",
+            "description": "拥有基础技能：天气查询、计算器、搜索",
+            "icon": "🔷"
+        },
+        "2": {
+            "name": "高级 Agent",
+            "description": "拥有全部技能：基础功能 + 时间管理 + 数据处理",
+            "icon": "💎"
+        },
+        "3": {
+            "name": "自定义 Agent",
+            "description": "可自定义技能和提示词的灵活 Agent",
+            "icon": "⚙️"
+        }
     }
     
-    # DeepSeek 特殊配置
-    if model_provider == "deepseek":
-        os.environ["OPENAI_API_KEY"] = os.getenv("DEEPSEEK_API_KEY", "")
-        os.environ["OPENAI_API_BASE"] = "https://api.deepseek.com"
+    print("\n" + "=" * 70)
+    print("🤖  可用的 Agent 列表")
+    print("=" * 70)
     
-    model_name = model_map.get(model_provider, "anthropic:claude-sonnet-4-5")
-    print(f"🤖 使用模型: {model_name}\n")
+    for key, agent_info in agents.items():
+        print(f"\n{agent_info['icon']}  [{key}] {agent_info['name']}")
+        print(f"    {agent_info['description']}")
     
-    # 创建代理，配备多个工具
-    agent = create_agent(
-        model=model_name,
-        tools=[get_weather, calculate, search_info],
-        system_prompt="""你是一个乐于助人的智能助手。你可以：
-        1. 查询天气信息
-        2. 进行数学计算
-        3. 搜索信息
+    print("\n" + "=" * 70)
+    return agents
+
+
+def get_user_choice(agents):
+    """获取用户选择"""
+    while True:
+        choice = input(f"\n请选择 Agent (1-{len(agents)}) 或输入 'q' 退出: ").strip()
         
-        请根据用户的问题，选择合适的工具来回答。回答要简洁、准确、友好。""",
-    )
+        if choice.lower() == 'q':
+            return None
+        
+        if choice in agents:
+            return choice
+        
+        print("❌ 无效选择，请重新输入！")
+
+
+def create_selected_agent(choice):
+    """根据用户选择创建 Agent"""
+    print("\n" + "-" * 70)
     
+    if choice == "1":
+        agent = AgentFactory.create_basic_agent()
+    elif choice == "2":
+        agent = AgentFactory.create_advanced_agent()
+    elif choice == "3":
+        # 自定义 Agent 示例
+        from src.skills import BASIC_SKILLS
+        agent = AgentFactory.create_custom_agent(
+            tools=BASIC_SKILLS[:2],  # 只使用前两个技能
+            system_prompt="你是一个专注于天气和计算的助手。"
+        )
+    else:
+        return None
+    
+    print("-" * 70)
     return agent
+
+
+def chat_loop(agent, agent_name):
+    """对话循环"""
+    print(f"\n💬 开始与 {agent_name} 对话")
+    print("提示: 输入 'back' 返回 Agent 选择，输入 'quit' 退出程序\n")
+    
+    while True:
+        user_input = input("👤 你: ").strip()
+        
+        if not user_input:
+            continue
+        
+        if user_input.lower() == 'back':
+            print("\n🔙 返回 Agent 选择...")
+            return 'back'
+        
+        if user_input.lower() in ['quit', 'exit', 'q']:
+            return 'quit'
+        
+        try:
+            print("\n🤖 助手: ", end="", flush=True)
+            response = agent.invoke(
+                {"messages": [{"role": "user", "content": user_input}]}
+            )
+            print(response)
+            print()
+        except Exception as e:
+            print(f"\n❌ 错误: {str(e)}\n")
 
 
 def main():
     """主函数"""
-    print("=" * 60)
-    print("欢迎使用 LangChain 智能代理！")
-    print("=" * 60)
+    print("\n" + "=" * 70)
+    print("🎯  欢迎使用 LangChain 智能代理交互系统")
+    print("=" * 70)
     
-    # 创建代理
-    agent = create_my_agent()
-    
-    # 示例对话
-    test_queries = [
-        "北京的天气怎么样？",
-        "帮我计算 123 * 456",
-        "搜索一下 LangChain 的最新功能",
-    ]
-    
-    for query in test_queries:
-        print(f"\n用户: {query}")
-        print("-" * 60)
+    while True:
+        # 显示 Agent 列表
+        agents = display_agents()
         
-        try:
-            # 调用代理
-            response = agent.invoke(
-                {"messages": [{"role": "user", "content": query}]}
-            )
-            print(f"助手: {response}")
-        except Exception as e:
-            print(f"错误: {str(e)}")
-    
-    print("\n" + "=" * 60)
-    print("演示结束！")
-    print("=" * 60)
+        # 获取用户选择
+        choice = get_user_choice(agents)
+        
+        if choice is None:
+            print("\n👋 再见！")
+            break
+        
+        # 创建选中的 Agent
+        agent = create_selected_agent(choice)
+        
+        if agent is None:
+            print("❌ Agent 创建失败！")
+            continue
+        
+        # 进入对话循环
+        result = chat_loop(agent, agents[choice]['name'])
+        
+        if result == 'quit':
+            print("\n👋 再见！")
+            break
 
 
 if __name__ == "__main__":
